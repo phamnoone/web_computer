@@ -1,0 +1,296 @@
+<?php function send_mail_order()
+	{
+		global $conn;
+		global $adminEmail;
+		$cust=$_SESSION['cust'];
+		
+		$name		= 	$cust['name'];
+		$address	=	$cust['address'];
+		$tel		=	$cust['tel'];
+		$email		=	$cust['email'];
+
+		$name2		= 	$cust['name2'];
+		$address2	=	$cust['address2'];
+		$tel2		=	$cust['tel2'];
+		$email2		=	$cust['email2'];
+
+		$httt  		= 	$cust['httt'];
+		$date 		=	$cust['date'];
+
+		$dathang="";
+		$cart=$_SESSION['cart'];
+	
+		$tongcong=0;
+		$cnt=0;
+		foreach ($cart as $product){
+			$sql = "select * from tbl_product where id='".$product[0]."'";
+			$result = mysql_query($sql,$conn);
+			$pro=mysql_fetch_assoc($result);
+			
+			$dathang.="Ma san pham : ".$pro['code']."<br>"; 
+			$dathang.="Ten san pham : ".$pro['name']."<br>"; 
+			$dathang.="So luong : ".$product[1]."<br>"; 
+			$dathang.="Don gia : ".number_format($pro['price']*(100-$pro['km'])/100,0,',','.')."&nbsp;"."$"."<br>";
+			$dathang.="Thanh tien : ".$pro['price']*(100-$pro['km'])/100*$product[1]."&nbsp;"."$<br><br>";
+			
+			$tongcong=$tongcong+$pro['price']*(100-$pro['km'])/100*$product[1];
+			$cnt=$cnt+1;
+			
+		
+		} 
+		$dathang.="<hr>Tong cong : ".number_format($tongcong,0,',','.')."&nbsp;"."$<br>";
+
+		$sql_order = "insert into  tbl_order (total_money, status, date_added, guest_name, guest_tel , guest_add, guest_email, receiver_name, receiver_tel , receiver_add, receiver_email,httt, date_delivery) values (".$tongcong.",0,now(),'".$name."','".$tel."','".$address."','".$email."','".$name2."','".$tel2."','".$address2."','".$email2."','".$httt."','".$date."')";
+		
+		mysql_query($sql_order,$conn);
+		
+		// get orderid
+		$sql_order_id = "select * from tbl_order order by id desc limit 1";
+		$result_order_id=mysql_query($sql_order_id,$conn);	
+		$row_order_id=mysql_fetch_assoc($result_order_id);
+
+		// push data order detail 
+		foreach ($cart as $product){
+			$sql = "select * from tbl_product where id='".$product[0]."'";
+			$result = mysql_query($sql,$conn);
+			$pro=mysql_fetch_assoc($result);	
+			$sql_order_detail = "INSERT INTO tbl_order_detail (  product_id ,order_id , quantity ) VALUES (".$pro['id'].",".$row_order_id['id'].",".$product[1].")";
+			mysql_query($sql_order_detail,$conn);
+		} 
+		
+		return "";
+	}
+
+?>
+<?php if (count($_SESSION['cart'])<=0) echo "<script>window.location='./?frame=cart'</script>";
+	$cart=$_SESSION['cart'];
+	
+	$cust=$_SESSION['cust'];
+?>    
+
+<?php if (isset($_POST['butSub']))
+	{
+		$tongcong=0;
+		$cnt=0;
+		
+		if (send_mail_order()=="")
+			echo "<script>window.location='./?frame=checkout&code=1'</script>";
+		else
+			{
+				echo "<p align='center' class='err'><font color=red>Không thể gửi thông tin !.</font></p>";
+			}
+	}
+	
+?>
+
+<p align="center" style="line-height: 150%" class="err">
+<font face="Tahoma" style="font-size: 12px; padding-top:20px">
+<?php if ($_REQUEST['code']=='1') {
+	
+   		echo "<span style='font:'Tahoma; font-size:14px; color:#000000>Thông tin đặt hàng của bạn đã được gửi tới chúng tôi</span><br /><br />";
+   		echo "<a href='./'><span style='font:'Tahoma; font-size:14px; color:#000000>Nhấn vào đây để trở về trang chủ !.</span></a><br/><br/>";
+		unset($_SESSION['cart']);
+	}
+	else
+{
+?>
+</font>
+</p>
+<table border="0" cellspacing="1" cellpadding="2" width="100%" id="table8">
+<tr>
+<td height="20" colspan="3" class="titlenormalfontbold" style="padding-left:5px"><b>Thông tin khách hàng</b><HR size="1" noshade></td>
+</tr>
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size:12px">Họ và tên :</font></td>
+<td width="6">&nbsp; </td>
+<td nowrap>
+	<font face="Tahoma">
+	<span style="font-size: 12px">
+	<b>
+	<?php echo $cust['name']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+	</b>
+</td>
+</tr>
+
+
+
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size:12px">Địa chỉ :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+                                <font face="Tahoma">
+                                <span style="font-size: 12px">
+                                <b>
+                                <?php echo $cust['address']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+								</b>
+</td>
+
+
+
+
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size: 12px">Điện thoại:</font></td>
+<td width="6">&nbsp; </td>
+<td nowrap><font face="Tahoma"><span style="font-size: 12px">
+                                <b>
+                                <?php echo $cust['tel']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+								</b>
+</td>
+</tr>
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size: 12px">E-mail :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+    <font face="Tahoma">
+     <span style="font-size: 12px">
+ 	  <b> <?php echo $cust['email']?></b></span></font><b><font color="#000000" style="font-size: 12px"></font></b>								
+</td>
+</tr>
+<tr>
+<td height="20" colspan="3" class="titlenormalfontbold" style="padding-left:5px"><b>Thông tin người nhận</b><HR size="1" noshade></td>
+</tr>
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size:12px">Họ và tên :</font></td>
+<td width="6">&nbsp; </td>
+<td nowrap>
+	<font face="Tahoma">
+	<span style="font-size: 12px">
+	<b>
+	<?php echo $cust['name2']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+	</b>
+</td>
+</tr>
+
+
+
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size:12px">Địa chỉ :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+                                <font face="Tahoma">
+                                <span style="font-size: 12px">
+                                <b>
+                                <?php echo $cust['address2']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+								</b>
+</td>
+
+
+
+
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size: 12px">Điện thoại:</font></td>
+<td width="6">&nbsp; </td>
+<td nowrap><font face="Tahoma"><span style="font-size: 12px">
+                                <b>
+                                <?php echo $cust['tel2']?></b></span></font><b><font color="#000000" style="font-size: 12px">
+</font>
+								</b>
+</td>
+</tr>
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size: 12px">E-mail :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+    <font face="Tahoma">
+     <span style="font-size: 12px">
+ 	  <b> <?php echo $cust['email2']?></b></span></font><b><font color="#000000" style="font-size: 12px"></font></b>								
+</td>
+</tr>
+
+<tr>
+<td height="20" colspan="3" class="titlenormalfontbold" style="padding-left:5px"><b>Thông tin đơn hàng</b><HR size="1" noshade></td>
+</tr>
+
+<tr>
+<td align="right" width="100"><font color="#000000" face="Tahoma" style="font-size: 12px">Hình thức thanh toán :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+    <font face="Tahoma">
+     <span style="font-size: 12px">
+ 	  <b> <?php echo $cust['httt']?></b></span></font><b><font color="#000000" style="font-size: 12px"></font></b>								
+</td>
+</tr>
+
+<tr>
+<td align="right" width="150"><font color="#000000" face="Tahoma" style="font-size: 12px">Thời gian giao hàng :</font></td>
+<td width="6">&nbsp;</td>
+<td nowrap>
+    <font face="Tahoma">
+     <span style="font-size: 12px">
+ 	  <b> <?php echo $cust['date']?></b></span></font><b><font color="#000000" style="font-size: 12px"></font></b>								
+</td>
+</tr>
+
+</table>
+
+<table border="0" cellpadding="10" cellspacing="1" width="100%">
+<tr><td class="DialogBox">
+<form action="./" method="POST" name="cartform">
+<table border="1" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse" bordercolor="#333333">
+	<tr>
+		<td align="center" width="100" height="30">Hình ảnh</td>
+		<td width="400" height="34" align="center"><font face="Tahoma" style="font-size: 12px">Sản phẩm</font></td>
+		<td align="center" width="100" height="30"><font face="Tahoma" style="font-size: 12px">Số lượng</font></td>
+		<td align="center" width="160" height="30"><font face="Tahoma" style="font-size: 12px">Đơn giá</font>
+			<span style="font-family:Tahoma; font-weight:600; color:#FF0000"><?php echo $currencyUnit?></span></td>
+		<td align="center" width="164" height="30"><font face="Tahoma" style="font-size: 12px">Thành tiền</font>
+			<span style="font-family:Tahoma; font-weight:600; color:#FF0000"><?php echo $currencyUnit?></span>
+		</td>
+	</tr>
+<?php $cart=$_SESSION['cart'];
+$cnt=0;
+$tongcong=0;
+foreach ($cart as $product){
+$sql = "select * from tbl_product where id='".$product[0]."'";
+$result = mysql_query($sql,$conn);
+if (mysql_num_rows($result)>0)
+{
+$pro=mysql_fetch_assoc($result);
+?>	
+	<tr>
+		<td align="center" width="100">
+		<font face="Tahoma" style="font-size: 12px">
+<A href="./?frame=product_detail&id=<?php echo $pro['id']?>"><img src="<?php echo $pro['image']?>" alt="<?php echo $pro['name']?>" border="0" width="100"></A></font></td>
+		<td align="center"><span style="font-size: 12px">
+		  <?php echo $pro['name']?>
+		</span></td>
+		<td align="center" width="100"><span style="font-size: 12px"><?php echo $product[1]?></span></td>
+		<td align="center" width="160"><span style="font-size: 12px"><?php echo number_format($pro['price']*(100-$pro['km'])/100,0,',','.')?></span> </td>
+		<td align="center" width="164"><span style="font-size: 12px"><?php echo number_format(($pro['price']*(100-$pro['km'])/100*$product[1]),0,',','.')?>
+		</span></td>
+	</tr>
+<?php }
+$tongcong=$tongcong+$pro['price']*(100-$pro['km'])/100*$product[1];
+$cnt=$cnt+1;
+} 
+?>
+</table>
+
+<table border="0" width="100%">
+<tr><td height="10px"></td></tr>
+<tr><td align="right" style="padding-right:10px">
+		<font face="Tahoma" style="font-size: 12px"><b>Tổng cộng : <?php echo number_format($tongcong,0,',','.')?></b></font>
+			<span style="font-family:Tahoma; font-weight:600; color:#FF0000"><?php echo $currencyUnit?></span>
+	</td></tr>
+</table>
+<HR align="left" noshade size="1">
+<table border="0" cellpadding="0" cellspacing="0" width="100%" id="table5">
+<tr>
+<td>
+<p align="center"><font face="Verdana" size="1">
+<input type="submit" class="buttonorange" onmouseover="this.className='buttonblue'" onmouseout="this.className='buttonorange'" style="height: 22px; width:130px" name="butSub" value="Gửi đơn hàng">
+</font></td>
+</tr>
+</table>
+<input type="hidden" name="frame" value="checkout">
+</form>
+</td></tr>
+</table>
+<?php }
+?>
+
